@@ -22,7 +22,7 @@ class ProductViewSet(ViewSet, PageNumberPagination):
         self.page_size = int(size)
         paginated_queryset = self.paginate_queryset(queryset=queryset, request=request)
         serializer = serializers.ProductSerializer(paginated_queryset, many=True)
-        return self.paginate_queryset(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     def retrieve(self, request, pk=None):
         product = get_object_or_404(Product, slug=pk)

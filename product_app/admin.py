@@ -34,3 +34,7 @@ class ProductAdmin(admin.ModelAdmin):
     model = models.Product
     inlines = [ProductColorInLine, ProductSpecificationsInLine, ProductImageInLine]
     autocomplete_fields = ['category', "brand"]
+
+
+admin.site.register(models.Color)
+admin.site.register(models.ProductPriceChange)

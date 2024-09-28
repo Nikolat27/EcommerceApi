@@ -45,18 +45,15 @@ class Product(models.Model):
     def __str__(self):
         return f"Title: {self.title} - Caption: {self.description:50} - Price: {self.price}"
 
+    def save(self):
+        if self.title:
+            self.slug = slugify(self.title, allow_unicode=True)
+        super(Product, self).save()
+
     def discounted_price(self):
         if self.enable_discount and self.discount_percentage >= 0:
             return self.price - (self.price / 100 * self.discount_percentage)
         return self.price
-
-
-@receiver(post_save, sender=Product)
-def save_slug(sender, instance, created, **kwargs):
-    if created:
-        instance.slug = slugify(instance.title)
-    else:
-        instance.slug = slugify(instance.title)
 
 
 class ProductPriceChange(models.Model):
