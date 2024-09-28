@@ -60,9 +60,17 @@ class UserLoginView(APIView):
     permission_classes = [IsNotAuthenticated]
 
     def post(self, request):
+        if request.user.is_authenticated:
+            print("he is logged in")
+        else:
+            print("he is not logged in!")
+
         serializer = TokenObtainPairSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        # Check if the serializer is valid
+        if serializer.is_valid():
+            return JsonResponse(serializer.validated_data, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLogoutView(APIView):
