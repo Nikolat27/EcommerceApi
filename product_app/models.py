@@ -3,6 +3,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils.text import slugify
 
+from user_auth_app.models import User
+
 
 # Create your models here.
 
@@ -111,3 +113,26 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return self.product.title
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
+    choices = [("1", "1/5"), ("2", "2/5"), ("3", "3/5"), ("4", "4/5"), ("5", "5/5")]
+    text = models.TextField()
+    rating = models.CharField(max_length=10, choices=choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.title} - {self.author.username} - {self.rating}"
+
+
+class Comment(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies")
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.title} - {self.author.username} - {self.text:20}"

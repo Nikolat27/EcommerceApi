@@ -38,3 +38,5 @@ class ProductAdmin(admin.ModelAdmin):
 
 admin.site.register(models.Color)
 admin.site.register(models.ProductPriceChange)
+admin.site.register(models.Review)
+admin.site.register(models.Comment)
