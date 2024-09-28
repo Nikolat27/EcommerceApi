@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 class Category(models.Model):
     title = models.CharField(max_length=50)
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, related_name="sub")
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, related_name="sub", null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -38,7 +38,7 @@ class Product(models.Model):
     price = models.FloatField()
     discount_percentage = models.FloatField()
     enable_discount = models.BooleanField(default=False)
-    slug = models.SlugField(max_length=100, allow_unicode=True, unique=True)
+    slug = models.SlugField(max_length=100, allow_unicode=True, unique=True, null=True, blank=True)
     updated_at = models.DateField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -52,9 +52,11 @@ class Product(models.Model):
 
 
 @receiver(post_save, sender=Product)
-def save_slug(sender, instance, **kwargs):
-    instance.slug = slugify(instance.title)
-    instance.save()
+def save_slug(sender, instance, created, **kwargs):
+    if created:
+        instance.slug = slugify(instance.title)
+    else:
+        instance.slug = slugify(instance.title)
 
 
 class ProductPriceChange(models.Model):
