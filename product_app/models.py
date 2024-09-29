@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 from django.utils.text import slugify
 
 from user_auth_app.models import User
@@ -115,6 +116,32 @@ class ProductImage(models.Model):
         return self.product.title
 
 
+def time_difference(created_at):
+    current_time = timezone.now()
+    time_difference = current_time - created_at
+    days = time_difference.days
+    hours, remainder = divmod(time_difference.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    if days >= 365:
+        years = days // 365
+        return f"{years} year{'s' if years > 1 else ''} ago"
+    elif days >= 30:
+        month = days // 30
+        return f"{month} month{'s' if month > 1 else ''} ago"
+    elif days >= 7:
+        week = days // 7
+        return f"{week} week{'s' if week > 1 else ''} ago"
+    elif days >= 1:
+        return f"{days} day{'s' if days > 1 else ''} ago"
+    elif hours >= 1:
+        return f"{hours} hour{'s' if hours > 1 else ''} ago"
+    elif minutes >= 1:
+        return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+    else:
+        return f"{seconds} second{'s' if seconds > 1 else ''} ago"
+
+
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews")
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
@@ -126,6 +153,9 @@ class Review(models.Model):
     def __str__(self):
         return f"{self.product.title} - {self.author.username} - {self.rating}"
 
+    def time_difference(self):
+        return time_difference(self.created_at)
+
 
 class Comment(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="comments")
@@ -136,3 +166,6 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.product.title} - {self.author.username} - {self.text:20}"
+
+    def time_difference(self):
+        return time_difference(self.created_at)

@@ -28,6 +28,9 @@ class ProductSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     colors = serializers.SerializerMethodField()
     price_changes = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
+    x = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Product
@@ -52,7 +55,32 @@ class ProductSerializer(serializers.ModelSerializer):
         return {x.color.title: x.quantity for x in obj.product_color.all() if x.in_stock is True}
 
     def get_price_changes(self, obj):
-        return {change.price: change.created_at.date for change in obj.price_changes.all()}
+        return {change.price: change.created_at.date() for change in obj.price_changes.all()}
+
+    def get_reviews(self, obj):
+        return {idx + 1: {
+            "product": review.product.title,
+            "author": review.author.username,
+            "text": review.text,
+            "rating": review.rating,
+            "time_difference": review.time_difference(),
+            "created_at": review.created_at.date(),
+        }
+            for idx, review in enumerate(obj.reviews.all())
+        }
+
+    def get_comments(self, obj):
+        return {idx + 1: {
+            "product": comment.product.title,
+            "author": comment.author.username,
+            "text": comment.text,
+            "parent_id": comment.parent_id or 0,
+            "time_difference": comment.time_difference(),
+            "is_reply": bool(comment.parent_id),
+            "created_at": comment.created_at.date(),
+        }
+            for idx, comment in enumerate(obj.comments.all())
+        }
 
 
 class ProductPriceChangeSerializer(serializers.ModelSerializer):
@@ -64,4 +92,16 @@ class ProductPriceChangeSerializer(serializers.ModelSerializer):
 class ProductColorSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ProductColor
+        fields = "__all__"
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Review
+        fields = "__all__"
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Comment
         fields = "__all__"
