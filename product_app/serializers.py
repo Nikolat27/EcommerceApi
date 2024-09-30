@@ -30,7 +30,7 @@ class ProductSerializer(serializers.ModelSerializer):
     price_changes = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
-    x = serializers.SerializerMethodField()
+    total_likes = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Product
@@ -64,6 +64,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "text": review.text,
             "rating": review.rating,
             "time_difference": review.time_difference(),
+            "likes": review.action.filter(action_type="like").count(),
+            "dislikes": review.action.filter(action_type="dislike").count(),
             "created_at": review.created_at.date(),
         }
             for idx, review in enumerate(obj.reviews.all())
@@ -77,10 +79,15 @@ class ProductSerializer(serializers.ModelSerializer):
             "parent_id": comment.parent_id or 0,
             "time_difference": comment.time_difference(),
             "is_reply": bool(comment.parent_id),
+            "likes": comment.action.filter(action_type="like").count(),
+            "dislikes": comment.action.filter(action_type="dislike").count(),
             "created_at": comment.created_at.date(),
         }
             for idx, comment in enumerate(obj.comments.all())
         }
+
+    def get_total_likes(self, obj):
+        return obj.total_likes()
 
 
 class ProductPriceChangeSerializer(serializers.ModelSerializer):

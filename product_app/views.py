@@ -1,13 +1,15 @@
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 from . import serializers
 from rest_framework.response import Response
-
-from product_app.models import Product, Review, Comment
+from product_app.models import Product, Review, Comment, ProductLike, ReviewAction, CommentAction
 from .permissions import IsAuthenticatedOrReadOnly
 
 
@@ -84,3 +86,42 @@ class CommentProductView(APIView):
         else:
             Comment.objects.create(author=author, product_id=pk, text=text, parent_id=parent_id)
         return JsonResponse({"data": "Comment Created successfully"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def product_like(request, pk):
+    try:
+        product = ProductLike.objects.get(product_id=pk, user=request.user)
+        product.delete()
+        return Response({"data": "Product Disliked!"}, status=status.HTTP_201_CREATED)
+    except ProductLike.DoesNotExist:
+        Product.objects.create(product_id=pk, user=request.user)
+        return Response({"data": "Product Liked!"}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def review_action(request, pk, action):
+    if action not in ["like", "dislike"]:
+        return Response({"response": "Invalid action! your action_type must be either 'like' or 'dislike'"})
+    review, created = ReviewAction.objects.get_or_create(review_id=pk, user=request.user,
+                                                         defaults={"action_type": action})
+    if not created:
+        review.action_type = action
+        review.save()
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def comment_action(request, pk, action):
+    if action not in ["like", "dislike"]:
+        return Response({"response": "Invalid action! your action_type must be either 'like' or 'dislike'"},
+                        status=status.HTTP_400_BAD_REQUEST)
+    comment, created = CommentAction.objects.get_or_create(comment_id=pk, user=request.user,
+                                                           defaults={"action_type": action})
+    if not created:
+        comment.action_type = action
+        comment.save()
+
+    return Response({"response": "your action submitted successfully!"}, status=status.HTTP_200_OK)

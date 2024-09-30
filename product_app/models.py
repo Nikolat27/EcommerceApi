@@ -58,6 +58,9 @@ class Product(models.Model):
             return self.price - (self.price / 100 * self.discount_percentage)
         return self.price
 
+    def total_likes(self):
+        return self.product_likes.count()
+
 
 class ProductPriceChange(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="price_changes")
@@ -169,3 +172,38 @@ class Comment(models.Model):
 
     def time_difference(self):
         return time_difference(self.created_at)
+
+
+class ProductLike(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="product_likes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="product_likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.title} - {self.user.username}"
+
+
+ACTION_TYPES = (
+    ("like", "Like"),
+    ("dislike", "dislike"),
+)
+
+
+class ReviewAction(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="action")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_action")
+    action_type = models.CharField(max_length=10, choices=ACTION_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.action_type}"
+
+
+class CommentAction(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="action")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comment_action")
+    action_type = models.CharField(max_length=10, choices=ACTION_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.action_type}"
