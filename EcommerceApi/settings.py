@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "home_app.apps.HomeAppConfig",
     "rest_framework",
     "rest_framework_simplejwt",
+    "cart_app.apps.CartAppConfig",
 ]
 
 MIDDLEWARE = [

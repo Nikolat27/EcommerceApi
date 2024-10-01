@@ -116,7 +116,7 @@ def review_action(request, pk, action):
 @permission_classes([IsAuthenticated])
 def comment_action(request, pk, action):
     if action not in ["like", "dislike"]:
-        return Response({"response": "Invalid action! your action_type must be either 'like' or 'dislike'"},
+         return Response({"response": "Invalid action! your action_type must be either 'like' or 'dislike'"},
                         status=status.HTTP_400_BAD_REQUEST)
     comment, created = CommentAction.objects.get_or_create(comment_id=pk, user=request.user,
                                                            defaults={"action_type": action})
