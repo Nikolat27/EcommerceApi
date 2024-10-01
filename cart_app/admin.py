@@ -4,5 +4,12 @@ from . import models
 # Register your models here.
 
 
-admin.site.register(models.Cart)
-admin.site.register(models.CartItem)
+class CartItemTabularInLine(admin.TabularInline):
+    model = models.CartItem
+
+
+@admin.register(models.Cart)
+class CartAdmin(admin.ModelAdmin):
+    model = models.Cart
+    inlines = [CartItemTabularInLine]
+

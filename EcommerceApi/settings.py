@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os.path
 from pathlib import Path
-
+from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -123,6 +123,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Set access token lifetime
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Set refresh token lifetime
+    'ROTATE_REFRESH_TOKENS': True,                   # Optionally rotate refresh tokens
+    'BLACKLIST_AFTER_ROTATION': True,                 # Optionally blacklist old refresh tokens after rotation
+    'AUTH_HEADER_TYPES': ('Bearer',),                 # Default is 'Bearer'
 }
 
 STATIC_URL = 'static/'

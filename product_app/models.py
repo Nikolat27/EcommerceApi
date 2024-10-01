@@ -46,7 +46,7 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Title: {self.title} - Caption: {self.description:50} - Price: {self.price}"
+        return f"Title: {self.title} - Price: {self.price}"
 
     def save(self):
         if self.title:

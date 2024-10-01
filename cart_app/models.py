@@ -5,8 +5,9 @@ from product_app.models import Product, Color
 
 
 class Cart(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cart")
-    session_id = models.CharField(max_length=60, unique=True)
+    id = models.BigAutoField(primary_key=True, auto_created=True, verbose_name="ID")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cart", null=True, blank=True)
+    session_id = models.CharField(max_length=60, unique=True, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.user.username if self.user else self.session_id
