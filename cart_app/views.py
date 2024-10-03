@@ -55,12 +55,17 @@ class AddCartView(APIView):
     permission_classes = [AllowAny]
 
     def add_product_to_cart(self, cart, product, color, quantity):
-        cart.cart_items.create(
-            product=product,
-            color=color,
-            quantity=quantity,
-            price=product.discounted_price(),
-        )
+        cartItem_product_checking = CartItem.objects.filter(cart=cart, product=product, color=color).first()
+        if cartItem_product_checking:
+            cartItem_product_checking.quantity += quantity
+            cartItem_product_checking.save()
+        else:
+            cart.cart_items.create(
+                product=product,
+                color=color,
+                quantity=quantity,
+                price=product.discounted_price(),
+            )
 
     def get(self, request, pk):
         cart, session_id = getCart(request)
