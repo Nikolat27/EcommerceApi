@@ -7,25 +7,50 @@ from rest_framework.permissions import AllowAny
 from .permissions import OnlyPostMethod 
 from rest_framework.response import Response
 from rest_framework import status
+from . import serializers
 
 # Create your views here.
 
 
-def getCart(request):
+def getCart(request, page_view=None):
+    if page_view is True:
+        session_id = request.GET.get("session_id") or request.POST.get("session_id") or None
+        try:
+            if session_id:
+                cart = Cart.objects.get(session_id=session_id)
+            else:
+                cart = Cart.objects.get(user=request.user)
+                
+            return cart
+        except Cart.DoesNotExist:
+            return None
+        
     session_id = None
     if request.user.is_authenticated:
         cart, created = Cart.objects.get_or_create(user=request.user)
     else:
         session_id = request.GET.get("session_id") or request.POST.get("session_id") or random.randint(1000000, 9999999)
+        print(session_id)
         cart, created = Cart.objects.get_or_create(session_id=session_id)
-    return (cart, session_id) if session_id else cart, None
+    return (cart, session_id) if session_id else (cart, None)
 
 def getProduct(pk):
     try:
         return Product.objects.get(id=pk)
     except Product.DoesNotExist:
         return None
-    
+
+class CartPageView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        cart = getCart(request, page_view=True)
+        if cart:
+            serializer = serializers.CartSerializer(instance=cart, many=False)
+            return Response({"response": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"response": "Your cart is empty!"}, status=status.HTTP_200_OK)
+
+
 class AddCartView(APIView):
     permission_classes = [AllowAny]
 
@@ -90,6 +115,7 @@ class AddCartView(APIView):
 
 class UpdateCardView(APIView):
     permission_classes = [OnlyPostMethod]
+
     def post(self, request, pk):
         quantity = request.POST.get("quantity")
         cart_item = CartItem.objects.get(id=pk)
@@ -99,14 +125,19 @@ class UpdateCardView(APIView):
 
 class DeleteCartView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, pk):
         cart_item = CartItem.objects.get(id=pk).delete()
         return Response({"response": "Product deleted successfully!"}, status=status.HTTP_200_OK)
     
 
 class DeleteWholeCart(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
         cart, session_id = getCart(request)
+        print(cart)
+        print("session_id", session_id)
         cart.cart_items.all().delete()
         return Response({"response": "Cart Items deleted successfully!"}, status=status.HTTP_200_OK)
     
