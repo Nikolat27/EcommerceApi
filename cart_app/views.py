@@ -11,7 +11,7 @@ from . import serializers
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from rest_framework.exceptions import ValidationError
 
 # Create your views here.
@@ -329,38 +329,34 @@ def apply_coupon(request, pk):
 
 def make_reserve(request, order_items):
     with transaction.atomic():
+        reserves = []
+        product_colors = {} # Cache
         for item in order_items:
-            reserve_id = random.randint(10000, 99999)
-
-            x = Reserve.objects.create(
+            reserves.append(Reserve(
                 user=request.user,
                 product=item.product,
                 color=item.color,
                 quantity=item.quantity,
-                reserve_id=reserve_id,
-            )
-
-            product_color = get_object_or_404(
-                ProductColor, product=item.product, color=item.color
-            )
+                reserve_id=random.randint(10000, 99999),
+            ))
+            
+            product_color_key = (item.product.id, item.color.id)
+            if product_color_key not in product_colors:
+                product_color = get_object_or_404(ProductColor, product=item.product,
+                            color=item.color)
+                product_colors[product_color_key] = product_color
 
             if not product_color.in_stock:
-                raise ValidationError(
-                    {
-                        f"{item.product.title} right now is not available! pls delete it!"
-                    }
-                )
+                error_message = f"{item.product.title} is currently unavailable"
+               
 
-            q = product_color.quantity - item.quantity
-            print("quantity", q)
-            if q < 0:
-                raise ValidationError(
-                    {
-                        f"Your considered quantity for {item.product.title} product is more than the available quantity, pls update it"
-                    }
-                )
-            else:
-                product_color.save()
+            if product_color.quantity < item.quantity:
+                error_message = f"{item.product.title} requested quantity exceeds available stock."
+
+            product_color.quantity -= item.quantity
+    
+        for product_color in product_colors.values():
+            product_color.save()
 
 
 class CheckoutPageView(APIView):
@@ -368,41 +364,43 @@ class CheckoutPageView(APIView):
 
     def get(self, request, all_orders=None, pk=None):
         try:
+            subtotal = 0
             # First we have reservation
             if bool(all_orders) is True:
                 orders = Order.objects.filter(user=request.user, is_paid=False)
                 if not orders:
                     return Response(
-                        {"response": "You dont have any order yet!"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                subtotal = 0
+                        {"response": "You dont have any order yet!"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 for order in orders:
                     subtotal += order.subtotal()
-                    make_reserve(request, order.order_items.all())
+                    error_message = make_reserve(request, order.order_items.all())
+                    if error_message:
+                        return Response({"response": error_message}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 order = get_object_or_404(Order, id=pk)
                 if order.is_paid is False:
-                    make_reserve(request, order.order_items.all())
+                    error_message = make_reserve(request, order.order_items.all())
+                    if error_message:
+                        return Response({"response": error_message}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response(
                         {"response": "This order has already been paid!"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
+            # Redirecting to Payment Gateway
             payment_request = payment_gateway(subtotal=subtotal)
             if payment_request is True:
                 Reserve.objects.filter(user=request.user).delete()
-                return Response(
-                    {"response": "Your purchase completed successfully!"},
-                    status=status.HTTP_200_OK,
-                )
-        except ValidationError as e:
-            return Response({"response": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"response": "Your purchase completed successfully!"},
+                        status=status.HTTP_200_OK,)
+        except IntegrityError:
+            return Response({"response": "An error occurred while processing your order."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def payment_gateway(subtotal):
-    # This is just a test function, I dont have any access to payment gateways Rn
+    # Simulated payment processing logic
     user_balance = 100000000  # USD
     user_balance - subtotal
     return True
