@@ -80,25 +80,23 @@ class Order(models.Model):
         return f"{self.user.username} - {self.country}"
 
     def subtotal(self):
-        total = 0
-        for item in self.order_items.all():
-            total += item.final_price()
+        total = sum(item.final_price() for item in self.order_items.all())
 
         # Coupon validation
         if self.coupon_used is False:
             return total
 
-        if not self.coupon.is_enable and self.coupon.max_usage <= self.coupon.used_by:
+        if not (self.coupon.is_enable and self.coupon.max_usage <= self.coupon.used_by):
             return total
 
-        if not self.coupon.active < timezone.now() < self.coupon.expire:
+        if not (self.coupon.active < timezone.now() < self.coupon.expire):
             return total
 
-        if not self.coupon.min_price <= total <= self.coupon.max_price:
+        if not (self.coupon.min_price <= total <= self.coupon.max_price):
             return total
 
-        total -= (total / 100) * self.coupon.discount_percentage
-        return total
+        discount_amount = (total / 100) * self.coupon.discount_percentage
+        return total - discount_amount
 
 
 class OrderItem(models.Model):

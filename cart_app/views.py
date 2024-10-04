@@ -8,6 +8,9 @@ from .permissions import OnlyPostMethod
 from rest_framework.response import Response
 from rest_framework import status
 from . import serializers
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
+from django.utils import timezone
 
 # Create your views here.
 
@@ -229,8 +232,13 @@ class OrderItemCreateView(APIView):
         color = data.get("color")
         quantity = data.get("quantity")
         price = data.get("price")
-        OrderItem.objects.create(order_id=order, product_id=product,
-                                color_id=color, quantity=quantity, price=price)
+        OrderItem.objects.create(
+            order_id=order,
+            product_id=product,
+            color_id=color,
+            quantity=quantity,
+            price=price,
+        )
         return Response(
             {"response": "Your OrderItem is created successfully!"},
             status=status.HTTP_201_CREATED,
@@ -257,3 +265,51 @@ class OrderItemDeleteView(APIView):
             {"response": "Your order item deleted successfully!"},
             status=status.HTTP_200_OK,
         )
+
+
+@permission_classes([IsAuthenticated])
+@api_view(["POST"])
+def apply_coupon(request, pk):
+    order = get_object_or_404(Order, id=pk)
+    if order.coupon_used:
+        return Response(
+            {"response": "This order has already used a coupon!"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    code = request.POST.get("coupon_code")
+    coupon = get_object_or_404(Coupon, code=code)
+
+    if not (coupon.is_enable and coupon.max_usage <= coupon.used_by):
+        return Response(
+            {
+                "response": "This coupon is either disabled or has reached the maximum usage."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not (coupon.active < timezone.now() < coupon.expire):
+        return Response(
+            {"response": "This coupon is not active."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not (coupon.min_price <= order.subtotal() <= coupon.max_price):
+        return Response(
+            {"response": "Your order's total price is not suitable for this coupon."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    order.coupon = coupon
+    order.coupon_used = True
+
+    coupon.used_times += 1
+    coupon.save()
+
+    order.save()
+    return Response(
+        {
+            "response": f"Coupon with {coupon.discount_percentage} discount % applied successfully!"
+        },
+        status=status.HTTP_200_OK,
+    )

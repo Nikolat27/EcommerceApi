@@ -15,4 +15,5 @@ urlpatterns = [
     path("create_order_item", views.OrderItemCreateView.as_view(), name="create_orderItem_view"),
     path("update_order_item/<int:pk>", views.OrderItemUpdateView.as_view(), name="update_orderItem_view"),
     path("delete_order_item/<int:pk>", views.OrderItemDeleteView.as_view(), name="delete_orderItem_view"),
+    path("apply_coupon/<int:pk>", views.apply_coupon, name="apply_coupon_order")
 ]
