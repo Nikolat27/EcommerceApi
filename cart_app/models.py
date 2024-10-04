@@ -1,6 +1,7 @@
+from typing import Any
 from django.db import models
 from user_auth_app.models import User
-from product_app.models import Product, Color
+from product_app.models import Product, Color, ProductColor
 from django.utils import timezone
 
 # Create your models here.
@@ -50,7 +51,7 @@ class Coupon(models.Model):
     expire = models.DateField()
     max_usage = models.PositiveSmallIntegerField(default=1)
     used_by = models.ManyToManyField(User, related_name="coupon_used")
-    is_enable = models.FloatField(default=True)
+    is_enable = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -110,3 +111,32 @@ class OrderItem(models.Model):
         return self.quantity * self.price
 
 
+class Reserve(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reserves")
+    reserve_id = models.CharField(max_length=16, unique=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reserves")
+    color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name="reserves")
+    quantity = models.PositiveSmallIntegerField(default=1)
+    is_paid = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.product.title} - {self.quantity}"
+    
+    def check_expiration(self):
+        time_difference = timezone.now() - self.created_at
+        return (time_difference.total_seconds() / 60) > 10
+    
+    # def __init__(self, *args, **kwargs):
+    #     if self.is_paid is True:
+    #         self.delete()
+
+    #     time_difference = timezone.now() - self.created_at
+    #     minute_time_difference = time_difference.total_seconds / 60
+    #     if minute_time_difference > 10:
+    #         product = ProductColor.objects.get(product=self.product, color=self.color)
+    #         product.quantity += self.quantity
+    #         product.save()
+    #         self.delete()
+
+    #     super().__init__(*args, **kwargs)

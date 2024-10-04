@@ -22,3 +22,4 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemTabularInLine]
 
 admin.site.register(models.Coupon)
+admin.site.register(models.Reserve)

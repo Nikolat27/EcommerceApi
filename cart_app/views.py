@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from .models import Cart, CartItem, Order, OrderItem, Coupon
-from product_app.models import Product
+from .models import Cart, CartItem, Order, OrderItem, Coupon, Reserve
+from product_app.models import Product, ProductColor
 import random
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .permissions import OnlyPostMethod
@@ -11,6 +11,8 @@ from . import serializers
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from django.utils import timezone
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
 # Create your views here.
 
@@ -191,7 +193,18 @@ class OrderCreateView(APIView):
     def post(self, request):
         serializer = serializers.OrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        order = serializer.save()
+        cart_items = CartItem.objects.filter(cart__user=request.user)
+        for item in cart_items:
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                color=item.color,
+                quantity=item.quantity,
+                price=item.price,
+            )
+
+        cart_items.delete()
         return Response(
             {"response": "Your Order is created successfully!"},
             status=status.HTTP_201_CREATED,
@@ -218,8 +231,7 @@ class OrderDeleteView(APIView):
             {"response": "Your order deleted successfully!"}, status=status.HTTP_200_OK
         )
 
-
-class OrderItemCreateView(APIView):
+    # class OrderItemCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -313,3 +325,84 @@ def apply_coupon(request, pk):
         },
         status=status.HTTP_200_OK,
     )
+
+
+def make_reserve(request, order_items):
+    with transaction.atomic():
+        for item in order_items:
+            reserve_id = random.randint(10000, 99999)
+
+            x = Reserve.objects.create(
+                user=request.user,
+                product=item.product,
+                color=item.color,
+                quantity=item.quantity,
+                reserve_id=reserve_id,
+            )
+
+            product_color = get_object_or_404(
+                ProductColor, product=item.product, color=item.color
+            )
+
+            if not product_color.in_stock:
+                raise ValidationError(
+                    {
+                        f"{item.product.title} right now is not available! pls delete it!"
+                    }
+                )
+
+            q = product_color.quantity - item.quantity
+            print("quantity", q)
+            if q < 0:
+                raise ValidationError(
+                    {
+                        f"Your considered quantity for {item.product.title} product is more than the available quantity, pls update it"
+                    }
+                )
+            else:
+                product_color.save()
+
+
+class CheckoutPageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, all_orders=None, pk=None):
+        try:
+            # First we have reservation
+            if bool(all_orders) is True:
+                orders = Order.objects.filter(user=request.user, is_paid=False)
+                if not orders:
+                    return Response(
+                        {"response": "You dont have any order yet!"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                subtotal = 0
+                for order in orders:
+                    subtotal += order.subtotal()
+                    make_reserve(request, order.order_items.all())
+            else:
+                order = get_object_or_404(Order, id=pk)
+                if order.is_paid is False:
+                    make_reserve(request, order.order_items.all())
+                else:
+                    return Response(
+                        {"response": "This order has already been paid!"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            payment_request = payment_gateway(subtotal=subtotal)
+            if payment_request is True:
+                Reserve.objects.filter(user=request.user).delete()
+                return Response(
+                    {"response": "Your purchase completed successfully!"},
+                    status=status.HTTP_200_OK,
+                )
+        except ValidationError as e:
+            return Response({"response": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def payment_gateway(subtotal):
+    # This is just a test function, I dont have any access to payment gateways Rn
+    user_balance = 100000000  # USD
+    user_balance - subtotal
+    return True
