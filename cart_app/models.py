@@ -64,8 +64,8 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     first_name = models.CharField(max_length=60)
     last_name = models.CharField(max_length=60)
-    coupon_used = models.FloatField(default=False)
-    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="coupon")
+    coupon_used = models.BooleanField(default=False)
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="coupon", null=True, blank=True)
     state = models.CharField(max_length=30)
     country = models.CharField(max_length=30)
     phone_number = models.CharField(max_length=11)
@@ -77,7 +77,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f"{self.user.username} - {self.country} - {self.subtotal}"
+        return f"{self.user.username} - {self.country}"
 
     def subtotal(self):
         total = 0
@@ -102,17 +102,13 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(
-        Order, on_delete=models.CASCADE, related_name="order_items"
-    )
-    product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name="order_items"
-    )
-    color = models.ForeignKey(
-        Color, on_delete=models.CASCADE, related_name="order_items"
-    )
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="order_items")
+    color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name="order_items")
     quantity = models.PositiveSmallIntegerField(default=1)
     price = models.FloatField()
 
     def final_price(self):
         return self.quantity * self.price
+
+

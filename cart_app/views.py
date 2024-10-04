@@ -220,9 +220,17 @@ class OrderItemCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = serializers.OrderItemSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        # serializer = serializers.OrderItemSerializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save()
+        data = request.POST
+        order = data.get("order")
+        product = data.get("product")
+        color = data.get("color")
+        quantity = data.get("quantity")
+        price = data.get("price")
+        OrderItem.objects.create(order_id=order, product_id=product,
+                                color_id=color, quantity=quantity, price=price)
         return Response(
             {"response": "Your OrderItem is created successfully!"},
             status=status.HTTP_201_CREATED,

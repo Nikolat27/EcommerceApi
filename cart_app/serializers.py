@@ -36,7 +36,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         return obj.color.title
 
 
-class OrderSerializer(serializers.ModelField):
+class OrderSerializer(serializers.ModelSerializer):
     order_items = serializers.SerializerMethodField()
     subtotal = serializers.SerializerMethodField()
 
@@ -51,7 +51,7 @@ class OrderSerializer(serializers.ModelField):
         return obj.subtotal()
 
 
-class OrderItemSerializer(serializers.ModelField):
+class OrderItemSerializer(serializers.ModelSerializer):
     product = serializers.SerializerMethodField()
     product_slug = serializers.SerializerMethodField()
     color = serializers.SerializerMethodField()
