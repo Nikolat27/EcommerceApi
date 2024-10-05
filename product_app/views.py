@@ -186,31 +186,26 @@ class ProductViewSet(ViewSet, PageNumberPagination):
         )
 
 
-@api_view(['GET']) # The permission classes always should be under the api_view decorator
+@api_view(['GET']) 
 @permission_classes([AllowAny])
 def clear_filters(request):
-    # Receiving the current url from frontend
     current_url = request.GET.get("current_url")
+    new_url = build_new_url(current_url)
+    return Response({"new_url": new_url}, status=status.HTTP_200_OK)
 
-    # Parsing part
+def build_new_url(current_url):
     current_url = parse.urlparse(current_url)
     query_params = current_url.query
     parsed_queries = parse.parse_qs(query_params)
-    new_queries = {k: v for k, v in parsed_queries.items() if k in ['size', "sort_by", "order_by", "page"]}        
-    
-    # Encoding part
-    query_list = []
-    for k, v in new_queries.items():
-        v = str(v).replace("[", "").replace("]", "").replace("'", '') # Convert ['new'] to new
-        query_list.append(f"{k}={v}")
-    
-    # Initializing the new url which is filtered completely!
-    new_query_params = "&".join(query_list)
-    new_url = f"{current_url.path}?{new_query_params}"
 
-    # Final step! we send thus url to our frontend and he should
-    # send a request to this url to receive the new products
-    return Response({"new_url": new_url}, status=status.HTTP_200_OK)
+    # Filter only the required parameters
+    new_queries = {k: v for k, v in parsed_queries.items() if k in ['size', "sort_by", "order_by", "page"]}
+
+    # Creating the new query string
+    query_list = [f"{k}={''.join(v)}" for k, v in new_queries.items()]
+    new_query_params = "&".join(query_list)
+    
+    return f"{current_url.path}?{new_query_params}"
 
 
 class ReviewProductView(APIView):
