@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "cart_app.apps.CartAppConfig",
     "redis",
+    "requests",
 ]
 
 MIDDLEWARE = [
