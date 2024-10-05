@@ -1,3 +1,4 @@
+import redis
 from django.shortcuts import render
 from rest_framework.views import APIView
 from .models import Cart, CartItem, Order, OrderItem, Coupon, Reserve
@@ -16,6 +17,7 @@ from rest_framework.exceptions import ValidationError
 
 # Create your views here.
 
+redis_client = redis.Redis(host="127.0.0.1:6379", db=0)
 
 def getCart(request, page_view=None):
     if page_view is True:
@@ -349,12 +351,13 @@ def make_reserve(request, order_items):
             if not product_color.in_stock:
                 error_message = f"{item.product.title} is currently unavailable"
                
-
+               
             if product_color.quantity < item.quantity:
                 error_message = f"{item.product.title} requested quantity exceeds available stock."
 
             product_color.quantity -= item.quantity
     
+        Reserve.objects.bulk_create(reserves)
         for product_color in product_colors.values():
             product_color.save()
 

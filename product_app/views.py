@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.db.models import Avg, Sum, Count
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import (
@@ -33,10 +34,49 @@ class ProductViewSet(ViewSet, PageNumberPagination):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def list(self, request):
-        queryset = Product.objects.all().order_by("-id")
+        products = Product.objects.all().order_by("-id")
         size = request.GET.get("size", 1)
+        # filtering parameters
+        categories = request.GET.getlist("category")
+        brands = request.GET.getlist("brand")
+        min_price = request.GET.get("min_price")
+        max_price = request.GET.get("max_price")
+        colors = request.GET.getlist("colors")
+        sort_by = request.GET.get("sort_by")
+        order_by = request.GET.get("order_by")
+
+        if categories and len(categories) > 0:
+            products = products.filter(category__title__in=categories)
+        
+        if brands and len(brands) > 0:
+            products = products.filter(brand__title__in=brands)
+
+        if min_price and max_price:
+            products = products.filter(price__gte=min_price, price__lte=max_price)
+        
+        if colors and len(colors) > 0:
+            products = products.filter(product_color__color__title__in=colors)
+
+        if sort_by == "is_discounted":
+            products = products.filter(enable_discount=True)
+        elif sort_by == "available":
+            products = products.filter(product_color__in_stock=True)
+
+        if order_by == "new":
+            products = products.order_by("-created_at")
+        elif order_by == "old":
+            products = products.order_by("created_at")
+        elif order_by == "most_popular":
+            products = products.annotate(rating=Avg("reviews__rating")).order_by("rating")
+        elif order_by == "least_popular":
+            products = products.annotate(rating=Avg("reviews__rating")).order_by("-rating")
+        elif order_by == "asc": # lowest value to the highest value
+            products = products.order_by("price")
+        elif order_by == "dsc": # highest value to the lowest value
+            products = products.order_by("-price")
+        
         self.page_size = int(size)
-        paginated_queryset = self.paginate_queryset(queryset=queryset, request=request)
+        paginated_queryset = self.paginate_queryset(queryset=products.distinct(), request=request)
         serializer = serializers.ProductSerializer(paginated_queryset, many=True)
         return self.get_paginated_response(serializer.data)
 
