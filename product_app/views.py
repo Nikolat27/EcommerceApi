@@ -23,12 +23,73 @@ from product_app.models import (
     ProductLike,
     ReviewAction,
     CommentAction,
+    Brand,
+    Category
 )
 from .permissions import IsAuthenticatedOrReadOnly
 
 
 # Create your views here.
 
+class CategoryViewSet(ViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def list(self, request):
+        categories = Category.objects.all()
+        serializer = serializers.CategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def retrieve(self, request, pk=None):
+        category = get_object_or_404(Category, id=pk)
+        serializer = serializers.CategorySerializer(instance=category, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def create(self, request):
+        serializer = serializers.CategorySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"response": "Category created successfully!"}, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None):
+        instance = get_object_or_404(Category, id=pk)
+        serializer = serializers.CategorySerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(instance=instance, validated_data=serializer.validated_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def delete(self, request, pk=None):
+        Category.objects.get(Category, id=pk).delete()
+        return Response({"response": "Category deleted successfully!"}, status=status.HTTP_200_OK)
+
+
+class BrandViewSet(ViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def list(self, request):
+        brands = Brand.objects.all()
+        serializer = serializers.BrandSerializer(brands, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def retrieve(self, request, pk=None):
+        brand = get_object_or_404(Brand, id=pk)
+        serializer = serializers.BrandSerializer(instance=brand, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def create(self, request):
+        serializer = serializers.BrandSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"response": "Brand created successfully!"}, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None):
+        brand = get_object_or_404(Brand, id=pk)
+        serializer = serializers.BrandSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(instance=brand, validated_data=serializer.validated_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def delete(self, request, pk=None):
+        Brand.objects.get(id=pk).delete()
+        return Response({"response": "Brand deleted successfully!"}, status=status.HTTP_200_OK)
+    
 
 class ProductViewSet(ViewSet, PageNumberPagination):
     permission_classes = [IsAuthenticatedOrReadOnly]
