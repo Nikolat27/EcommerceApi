@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "redis",
     "requests",
     'django_filters',
+    "celery"
 ]
 
 MIDDLEWARE = [
@@ -135,6 +136,12 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,                 # Optionally blacklist old refresh tokens after rotation
     'AUTH_HEADER_TYPES': ('Bearer',),                 # Default is 'Bearer'
 }
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'  # Use Redis as the result backend
+CELERY_TIMEZONE = 'UTC'  # Set your timezone
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")

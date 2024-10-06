@@ -359,7 +359,7 @@ def make_reserve(request, order_items):
                 product_color = get_object_or_404(ProductColor, product=item.product,
                             color=item.color)
                 product_colors[product_color_key] = product_color
-
+            
             if not product_color.in_stock:
                 error_message = f"{item.product.title} is currently unavailable"
                

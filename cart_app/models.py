@@ -123,20 +123,10 @@ class Reserve(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.product.title} - {self.quantity}"
 
+    def save(self, *args, **kwargs):
+
+        super(Reserve, self).save(*args, **kwargs)
+        
     def check_expiration(self):
         time_difference = timezone.now() - self.created_at
         return (time_difference.total_seconds() / 60) > 1
-    
-    # def __init__(self, *args, **kwargs):
-    #     if self.is_paid is True:
-    #         self.delete()
-
-    #     time_difference = timezone.now() - self.created_at
-    #     minute_time_difference = time_difference.total_seconds / 60
-    #     if minute_time_difference > 10:
-    #         product = ProductColor.objects.get(product=self.product, color=self.color)
-    #         product.quantity += self.quantity
-    #         product.save()
-    #         self.delete()
-
-    #     super().__init__(*args, **kwargs)
