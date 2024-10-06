@@ -5,13 +5,13 @@ from .models import Cart, CartItem, Order, OrderItem, Coupon, Reserve
 from product_app.models import Product, ProductColor
 import random
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .permissions import OnlyPostMethod
 from rest_framework.response import Response
 from rest_framework import status
 from . import serializers
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from django.utils import timezone
+from django.utils.timezone import timedelta
 from django.db import transaction, IntegrityError
 from rest_framework.exceptions import ValidationError
 
@@ -145,8 +145,6 @@ class AddCartView(APIView):
 
 
 class UpdateCardView(APIView):
-    permission_classes = [OnlyPostMethod]
-
     def post(self, request, pk):
         quantity = request.POST.get("quantity")
         cart_item = CartItem.objects.get(id=pk)
@@ -328,8 +326,22 @@ def apply_coupon(request, pk):
         status=status.HTTP_200_OK,
     )
 
+def clean_expired_reserves(user):
+    expiration_time = timezone.now() - timedelta(minutes=10)
+    # Get all reserves older than 10 minutes
+    expired_reserves = Reserve.objects.filter(user=user, created_at__lt=expiration_time)
+    
+    for reserve in expired_reserves:
+        # Add the quantity back to the product's stock
+        product_color = get_object_or_404(ProductColor, product=reserve.product, color=reserve.color)
+        product_color.quantity += reserve.quantity
+        product_color.save()
+    
+    # Delete the expired reserves
+    expired_reserves.delete()
 
 def make_reserve(request, order_items):
+    clean_expired_reserves(request.user)
     with transaction.atomic():
         reserves = []
         product_colors = {} # Cache
@@ -366,6 +378,7 @@ class CheckoutPageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, all_orders=None, pk=None):
+        clean_expired_reserves(request.user)
         try:
             subtotal = 0
             # First we have reservation

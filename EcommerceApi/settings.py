@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "cart_app.apps.CartAppConfig",
     "redis",
     "requests",
+    'django_filters',
 ]
 
 MIDDLEWARE = [

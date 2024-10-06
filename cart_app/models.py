@@ -122,10 +122,10 @@ class Reserve(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.product.title} - {self.quantity}"
-    
+
     def check_expiration(self):
         time_difference = timezone.now() - self.created_at
-        return (time_difference.total_seconds() / 60) > 10
+        return (time_difference.total_seconds() / 60) > 1
     
     # def __init__(self, *args, **kwargs):
     #     if self.is_paid is True:
