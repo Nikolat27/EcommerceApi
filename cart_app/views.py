@@ -146,10 +146,25 @@ class AddCartView(APIView):
 
 class UpdateCardView(APIView):
     def post(self, request, pk):
-        quantity = request.POST.get("quantity")
+        quantity = request.POST.get("quantity", 1)
+
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            return Response({"response": "Quantity must be an integer"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
         cart_item = CartItem.objects.get(id=pk)
-        cart_item.quantity += quantity
+        product = ProductColor.objects.get(product=cart_item.product, color=cart_item.color)
+
+        new_quantity = cart_item.quantity + quantity
+        if not (new_quantity <= product.quantity):
+            return Response({"response": "Your considered quantity exceeds the available quantity of the product"},
+                             status=status.HTTP_400_BAD_REQUEST)
+        
+        cart_item.quantity = new_quantity # Update quantity
         cart_item.save()
+        
         return Response(
             {"response": "Product updated successfully"}, status=status.HTTP_200_OK
         )
@@ -341,23 +356,17 @@ def clean_expired_reserves(user):
     expired_reserves.delete()
 
 def make_reserve(request, order_items):
-    clean_expired_reserves(request.user)
     with transaction.atomic():
         reserves = []
-<<<<<<< HEAD
-        products_colors = {}
+        product_colors = {}
         for item in order_items:
             # reserve_key = f'reserve_{item.product.id}_{item.color.id}'
             # product_color = redis_client.get(reserve_key)
             
-            if not product_color:
-                product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
-                # redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
-            
-=======
-        product_colors = {} # Cache
+            product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
+            # redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
+
         for item in order_items:
->>>>>>> parent of 77f2c05 (I added caching with redis for making reserves)
             reserves.append(Reserve(
                 user=request.user,
                 product=item.product,
@@ -375,19 +384,12 @@ def make_reserve(request, order_items):
             if not product_color.in_stock:
                 error_message = f"{item.product.title} is currently unavailable"
                
-               
             if product_color.quantity < item.quantity:
                 error_message = f"{item.product.title} requested quantity exceeds available stock."
 
             product_color.quantity -= item.quantity
-<<<<<<< HEAD
-            product_color.save()
             # Save updated quantity back to cache
-            redis_client.set(reserve_key, product_color, timeout=120)  # Refresh cache
 
-=======
-    
->>>>>>> parent of 77f2c05 (I added caching with redis for making reserves)
         Reserve.objects.bulk_create(reserves)
         for product_color in product_colors.values():
             product_color.save()
