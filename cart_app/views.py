@@ -346,13 +346,14 @@ def make_reserve(request, order_items):
     # clean_expired_reserves(request.user)
     with transaction.atomic():
         reserves = []
+        products_colors = {}
         for item in order_items:
-            reserve_key = f'reserve_{item.product.id}_{item.color.id}'
-            product_color = redis_client.get(reserve_key)
-
+            # reserve_key = f'reserve_{item.product.id}_{item.color.id}'
+            # product_color = redis_client.get(reserve_key)
+            
             if not product_color:
                 product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
-                redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
+                # redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
             
             reserves.append(Reserve(
                 user=request.user,
@@ -369,12 +370,13 @@ def make_reserve(request, order_items):
                 error_message = f"{item.product.title} requested quantity exceeds available stock."
 
             product_color.quantity -= item.quantity
+            product_color.save()
             # Save updated quantity back to cache
-            redis_client.set(reserve_key, product_color, timeout=300)  # Refresh cache
+            redis_client.set(reserve_key, product_color, timeout=120)  # Refresh cache
 
         Reserve.objects.bulk_create(reserves)
-        # for product_color in product_colors.values():
-        #     product_color.save()
+        for product_color in product_colors.values():
+            product_color.save()
 
 
 class CheckoutPageView(APIView):
