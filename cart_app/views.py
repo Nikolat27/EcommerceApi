@@ -14,12 +14,10 @@ from django.utils import timezone
 from django.utils.timezone import timedelta
 from django.db import transaction, IntegrityError
 from rest_framework.exceptions import ValidationError
-from django.core.serializers import serialize
-from django.http import HttpResponse
 
 # Create your views here.
 
-redis_client = redis.Redis(host="127.0.0.1", db=0)
+redis_client = redis.Redis(host="127.0.0.1:6379", db=0)
 
 def getCart(request, page_view=None):
     if page_view is True:
@@ -328,24 +326,25 @@ def apply_coupon(request, pk):
         status=status.HTTP_200_OK,
     )
 
-# def clean_expired_reserves(user):
-#     expiration_time = timezone.now() - timedelta(minutes=10)
-#     # Get all reserves older than 10 minutes
-#     expired_reserves = Reserve.objects.filter(user=user, created_at__lt=expiration_time)
+def clean_expired_reserves(user):
+    expiration_time = timezone.now() - timedelta(minutes=10)
+    # Get all reserves older than 10 minutes
+    expired_reserves = Reserve.objects.filter(user=user, created_at__lt=expiration_time)
     
-#     for reserve in expired_reserves:
-#         # Add the quantity back to the product's stock
-#         product_color = get_object_or_404(ProductColor, product=reserve.product, color=reserve.color)
-#         product_color.quantity += reserve.quantity
-#         product_color.save()
+    for reserve in expired_reserves:
+        # Add the quantity back to the product's stock
+        product_color = get_object_or_404(ProductColor, product=reserve.product, color=reserve.color)
+        product_color.quantity += reserve.quantity
+        product_color.save()
     
-#     # Delete the expired reserves
-#     expired_reserves.delete()
+    # Delete the expired reserves
+    expired_reserves.delete()
 
 def make_reserve(request, order_items):
-    # clean_expired_reserves(request.user)
+    clean_expired_reserves(request.user)
     with transaction.atomic():
         reserves = []
+<<<<<<< HEAD
         products_colors = {}
         for item in order_items:
             # reserve_key = f'reserve_{item.product.id}_{item.color.id}'
@@ -355,6 +354,10 @@ def make_reserve(request, order_items):
                 product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
                 # redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
             
+=======
+        product_colors = {} # Cache
+        for item in order_items:
+>>>>>>> parent of 77f2c05 (I added caching with redis for making reserves)
             reserves.append(Reserve(
                 user=request.user,
                 product=item.product,
@@ -362,18 +365,29 @@ def make_reserve(request, order_items):
                 quantity=item.quantity,
                 reserve_id=random.randint(10000, 99999),
             ))
-
+            
+            product_color_key = (item.product.id, item.color.id)
+            if product_color_key not in product_colors:
+                product_color = get_object_or_404(ProductColor, product=item.product,
+                            color=item.color)
+                product_colors[product_color_key] = product_color
+            
             if not product_color.in_stock:
-                error_message =  f"{item.product.title} is currently unavailable."
-                
+                error_message = f"{item.product.title} is currently unavailable"
+               
+               
             if product_color.quantity < item.quantity:
                 error_message = f"{item.product.title} requested quantity exceeds available stock."
 
             product_color.quantity -= item.quantity
+<<<<<<< HEAD
             product_color.save()
             # Save updated quantity back to cache
             redis_client.set(reserve_key, product_color, timeout=120)  # Refresh cache
 
+=======
+    
+>>>>>>> parent of 77f2c05 (I added caching with redis for making reserves)
         Reserve.objects.bulk_create(reserves)
         for product_color in product_colors.values():
             product_color.save()
@@ -383,7 +397,7 @@ class CheckoutPageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, all_orders=None, pk=None):
-        # clean_expired_reserves(request.user)
+        clean_expired_reserves(request.user)
         try:
             subtotal = 0
             # First we have reservation
@@ -425,9 +439,3 @@ def payment_gateway(subtotal):
     user_balance = 100000000  # USD
     user_balance - subtotal
     return True
-
-def x(request):
-    redis_client.set("abc", "Hi", ex=180) # expire time is in seconds
-    products = Product.objects.all()
-    result = serialize("json", products)
-    return HttpResponse(result)

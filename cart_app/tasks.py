@@ -2,18 +2,14 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-from .models import Reserve, ProductColor
-from django.shortcuts import get_object_or_404
-import redis
-
-redis_client = redis.Redis(host="127.0.0.1", db=0)
+from .models import Reserve
 
 # Celery worker command: celery -A EcommerceApi worker --loglevel=info --pool=solo
 # Celery beat command: celery -A EcommerceApi beat --loglevel=info
-
 logger = logging.getLogger(__name__)
 
 @shared_task
+<<<<<<< HEAD
 def cleanup_unpaid_reserves(request):
     # expiration_time = timezone.now() - timedelta(minutes=1)
     # cache_key = f'user_reserves_{request.user.id}'
@@ -47,3 +43,8 @@ def cleanup_unpaid_reserves(request):
     
     # Delete the expired reserves
     expired_reserves.delete()
+=======
+def cleanup_unpaid_reserves():
+    expiration_time = timezone.now() - timedelta(minutes=1)
+    Reserve.objects.filter(is_paid=False, created_at__lt=expiration_time).delete()
+>>>>>>> parent of 77f2c05 (I added caching with redis for making reserves)
