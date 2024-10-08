@@ -3,6 +3,9 @@ from django.db import models
 from user_auth_app.models import User
 from product_app.models import Product, Color, ProductColor
 from django.utils import timezone
+from django.dispatch import receiver
+from django.db.models.signals import pre_save
+from django.utils.timezone import timedelta
 
 # Create your models here.
 
@@ -113,20 +116,19 @@ class OrderItem(models.Model):
 
 class Reserve(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reserves")
-    reserve_id = models.CharField(max_length=16, unique=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reserves")
     color = models.ForeignKey(Color, on_delete=models.CASCADE, related_name="reserves")
     quantity = models.PositiveSmallIntegerField(default=1)
-    is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.product.title} - {self.quantity}"
 
-    def save(self, *args, **kwargs):
 
-        super(Reserve, self).save(*args, **kwargs)
-        
-    def check_expiration(self):
-        time_difference = timezone.now() - self.created_at
-        return (time_difference.total_seconds() / 60) > 1
+@receiver(pre_save, sender=Reserve)
+def set_expires_at(sender, instance, *args, **kwargs):
+    current_time = timezone.now()
+    if not instance.pk:
+        instance.expires_at = current_time + timedelta(minutes=1)
+

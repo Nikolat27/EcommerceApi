@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @shared_task
 def cleanup_unpaid_reserves():
     expiration_time = timezone.now() - timedelta(minutes=1)
-    expired_reserves = Reserve.objects.filter(is_paid=False, created_at__lt=expiration_time).delete()
+    expired_reserves = Reserve.objects.filter(created_at__lt=expiration_time).delete()
 
     for reserve in expired_reserves:
         product = get_object_or_404(ProductColor, product=reserve.product, color=reserve.color)
