@@ -341,65 +341,64 @@ def apply_coupon(request, pk):
         status=status.HTTP_200_OK,
     )
 
-def clean_expired_reserves(user):
-    expiration_time = timezone.now() - timedelta(minutes=10)
-    # Get all reserves older than 10 minutes
-    expired_reserves = Reserve.objects.filter(user=user, created_at__lt=expiration_time)
+# def clean_expired_reserves(user):
+#     expiration_time = timezone.now() - timedelta(minutes=10)
+#     # Get all reserves older than 10 minutes
+#     expired_reserves = Reserve.objects.filter(user=user, created_at__lt=expiration_time)
     
-    for reserve in expired_reserves:
-        # Add the quantity back to the product's stock
-        product_color = get_object_or_404(ProductColor, product=reserve.product, color=reserve.color)
-        product_color.quantity += reserve.quantity
-        product_color.save()
+#     for reserve in expired_reserves:
+#         # Add the quantity back to the product's stock
+#         product_color = get_object_or_404(ProductColor, product=reserve.product, color=reserve.color)
+#         product_color.quantity += reserve.quantity
+#         product_color.save()
     
-    # Delete the expired reserves
-    expired_reserves.delete()
+#     # Delete the expired reserves
+#     expired_reserves.delete()
 
-def make_reserve(request, order_items):
-    with transaction.atomic():
-        reserves = []
-        product_colors = {}
-        for item in order_items:
-            # reserve_key = f'reserve_{item.product.id}_{item.color.id}'
-            # product_color = redis_client.get(reserve_key)
+# def make_reserve(request, order_items):
+#     with transaction.atomic():
+#         reserves = []
+#         product_colors = {}
+#         for item in order_items:
+#             # reserve_key = f'reserve_{item.product.id}_{item.color.id}'
+#             # product_color = redis_client.get(reserve_key)
             
-            product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
-            # redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
+#             product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
+#             # redis_client.set(reserve_key, product_color, timeout=300)  # Cache for 5 minutes
 
-        for item in order_items:
-            reserves.append(Reserve(
-                user=request.user,
-                product=item.product,
-                color=item.color,
-                quantity=item.quantity,
-                reserve_id=random.randint(10000, 99999),
-            ))
+#         for item in order_items:
+#             reserves.append(Reserve(
+#                 user=request.user,
+#                 product=item.product,
+#                 color=item.color,
+#                 quantity=item.quantity,
+#                 reserve_id=random.randint(10000, 99999),
+#             ))
             
-            product_color_key = (item.product.id, item.color.id)
-            if product_color_key not in product_colors:
-                product_color = get_object_or_404(ProductColor, product=item.product,
-                            color=item.color)
-                product_colors[product_color_key] = product_color
+#             product_color_key = (item.product.id, item.color.id)
+#             if product_color_key not in product_colors:
+#                 product_color = get_object_or_404(ProductColor, product=item.product,
+#                             color=item.color)
+#                 product_colors[product_color_key] = product_color
             
-            if not product_color.in_stock:
-                error_message = f"{item.product.title} is currently unavailable"
+#             if not product_color.in_stock:
+#                 error_message = f"{item.product.title} is currently unavailable"
                
-            if product_color.quantity < item.quantity:
-                error_message = f"{item.product.title} requested quantity exceeds available stock."
+#             if product_color.quantity < item.quantity:
+#                 error_message = f"{item.product.title} requested quantity exceeds available stock."
 
-            product_color.quantity -= item.quantity
-            # Save updated quantity back to cache
+#             product_color.quantity -= item.quantity
+#             # Save updated quantity back to cache
 
-        Reserve.objects.bulk_create(reserves)
-        for product_color in product_colors.values():
-            product_color.save()
+#         Reserve.objects.bulk_create(reserves)
+#         for product_color in product_colors.values():
+#             product_color.save()
 
 
 class CheckoutPageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, all_orders=None, pk=None):
-        clean_expired_reserves(request.user)
         try:
             subtotal = 0
             # First we have reservation
@@ -411,13 +410,14 @@ class CheckoutPageView(APIView):
                 
                 for order in orders:
                     subtotal += order.subtotal()
-                    error_message = make_reserve(request, order.order_items.all())
+                    error_message = self.make_reserve(request, order.order_items.all())
                     if error_message:
                         return Response({"response": error_message}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 order = get_object_or_404(Order, id=pk)
+                subtotal += order.subtotal()
                 if order.is_paid is False:
-                    error_message = make_reserve(request, order.order_items.all())
+                    error_message = self.make_reserve(request, order.order_items.all())
                     if error_message:
                         return Response({"response": error_message}, status=status.HTTP_400_BAD_REQUEST)
                 else:
@@ -427,17 +427,42 @@ class CheckoutPageView(APIView):
                     )
 
             # Redirecting to Payment Gateway
-            payment_request = payment_gateway(subtotal=subtotal)
-            if payment_request is True:
+            if self.process_payment(subtotal):
                 Reserve.objects.filter(user=request.user).delete()
-                return Response({"response": "Your purchase completed successfully!"},
-                        status=status.HTTP_200_OK,)
+                return Response({"response": "Your purchase completed successfully!"}, status=status.HTTP_200_OK)
+            
         except IntegrityError:
             return Response({"response": "An error occurred while processing your order."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def make_reserve(self, request, order_items):
+        with transaction.atomic():
+            reserves = []
+            for item in order_items:
+                if not self.is_product_available(item):
+                    return f"{item.product.title} is currently unavailable"
+                
+                reserves.append(Reserve(
+                    user=request.user,
+                    product=item.product,
+                    color=item.color,
+                    quantity=item.quantity,
+                ))
 
-def payment_gateway(subtotal):
-    # Simulated payment processing logic
-    user_balance = 100000000  # USD
-    user_balance - subtotal
-    return True
+            Reserve.objects.bulk_create(reserves)
+            return None
+
+    def is_product_available(self, item):
+        product_color = get_object_or_404(ProductColor, product=item.product, color=item.color)
+        if product_color.quantity < item.quantity:
+            return False
+        product_color.quantity -= item.quantity
+        product_color.save()
+        return True
+
+    def payment_gateway(self, subtotal):
+        # Simulated payment processing logic
+        user_balance = 100000000  # USD
+        user_balance -= subtotal
+        return True
+
+
