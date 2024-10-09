@@ -1,0 +1,520 @@
+openapi: 3.0.3
+
+info:
+  title: Django DRF ECOMMERCE API
+  version: 3.0.3
+paths:
+  /brands/:
+    get:
+      operationId: brands_retrieve
+      tags:
+      - brands
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: brands_create
+      tags:
+      - brands
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: No response body
+  /brands/{id}/:
+    get:
+      operationId: brands_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - brands
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: brands_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - brands
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/add_to_cart/{id}:
+    get:
+      operationId: cart_add_to_cart_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: cart_add_to_cart_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /cart/apply_coupon/{id}:
+    post:
+      operationId: cart_apply_coupon_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/cart_page:
+    get:
+      operationId: cart_cart_page_retrieve
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /cart/checkout/{all_orders}/{id}:
+    get:
+      operationId: cart_checkout_retrieve
+      parameters:
+      - in: path
+        name: all_orders
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/create_order:
+    post:
+      operationId: cart_create_order_create
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/delete_cart/{id}:
+    get:
+      operationId: cart_delete_cart_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /cart/delete_order/{id}:
+    post:
+      operationId: cart_delete_order_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/delete_order_item/{id}:
+    post:
+      operationId: cart_delete_order_item_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/delete_whole_cartitems:
+    get:
+      operationId: cart_delete_whole_cartitems_retrieve
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /cart/update_cart/{id}:
+    post:
+      operationId: cart_update_cart_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/update_order/{id}:
+    post:
+      operationId: cart_update_order_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/update_order_item/{id}:
+    post:
+      operationId: cart_update_order_item_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /cart/view_order:
+    get:
+      operationId: cart_view_order_retrieve
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /categories/:
+    get:
+      operationId: categories_retrieve
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: categories_create
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: No response body
+  /categories/{id}/:
+    get:
+      operationId: categories_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: categories_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /product/clear_filters:
+    get:
+      operationId: product_clear_filters_retrieve
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /product/comment_action/{id}/{action}:
+    post:
+      operationId: product_comment_action_create
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /product/comments:
+    get:
+      operationId: product_comments_retrieve
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: product_comments_create
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /product/product_like/{id}:
+    post:
+      operationId: product_product_like_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /product/review_action/{id}/{action}:
+    post:
+      operationId: product_review_action_create
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /product/reviews/{id}:
+    get:
+      operationId: product_reviews_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: product_reviews_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - product
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /products/:
+    get:
+      operationId: products_retrieve
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: products_create
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: No response body
+  /products/{id}/:
+    get:
+      operationId: products_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /user/login:
+    post:
+      operationId: user_login_create
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /user/logout:
+    get:
+      operationId: user_logout_retrieve
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /user/register:
+    post:
+      operationId: user_register_create
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
