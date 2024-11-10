@@ -48,6 +48,7 @@ class CategoryViewSet(ViewSet):
     def create(self, request):
         serializer = serializers.CategorySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({"response": "Category created successfully!"}, status=status.HTTP_200_OK)
 
     def update(self, request, pk=None):
@@ -78,6 +79,7 @@ class BrandViewSet(ViewSet):
     def create(self, request):
         serializer = serializers.BrandSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({"response": "Brand created successfully!"}, status=status.HTTP_200_OK)
 
     def update(self, request, pk=None):
